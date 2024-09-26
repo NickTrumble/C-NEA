@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -17,17 +17,15 @@ namespace CSTerrain
         int radius = 30;
         float intensity;
         Label heightlabel, radiuslabel;
-        Button perlinregenbtn, simplexregenbtn, savebtn, penbt, dragbtn, zoombtn;
+        Button perlinregenbtn, simplexregenbtn, voronoiregenbtn, savebtn, penbt, dragbtn, zoombtn;
         float[,] noisemapp;
         Bitmap noise_bitmap;
         NumericUpDown scaleupdown, sizeupdown, octavesupdown, persistenceupdown;
-        bool pen, drag, zoom;
+        int mode = 0;
 
 
         public Form1()
         {
-            pen = true;
-            drag = zoom = false;
             InitializeComponent();
             this.Width = 650;
             this.Height = 500;
@@ -68,16 +66,9 @@ namespace CSTerrain
             };
             Controls.Add(radiuslabel);
 
-            Label regenlabel = new Label
-            {
-                Location = new Point(520, 50),
-                Text = "Regenerate using:"
-            };
-            Controls.Add(regenlabel);
-
             perlinregenbtn = new Button
             {
-                Location = new Point(499, 75),
+                Location = new Point(499, 50),
                 Size = new Size(68, 30),
                 Text = "Perlin"
             };
@@ -86,12 +77,20 @@ namespace CSTerrain
 
             simplexregenbtn = new Button
             {
-                Location = new Point(568, 75),
+                Location = new Point(568, 50),
                 Size = new Size(68, 30),
                 Text = "Simplex"
             };
             Controls.Add(simplexregenbtn);
             simplexregenbtn.Click += new EventHandler(SimplexRegen);
+
+            voronoiregenbtn = new Button
+            {
+                Location = new Point(499, 80),
+                Size = new Size(68, 30),
+                Text = "Voronoi"
+            };
+            Controls.Add(voronoiregenbtn);
 
             savebtn = new Button
             {
@@ -159,7 +158,8 @@ namespace CSTerrain
                 Minimum = 0.1M,
                 Maximum = 2M,
                 Value = 0.5M,
-                Increment = 0.1M
+                Increment = 0.1M,
+                DecimalPlaces = 1
             };
             Controls.Add(persistenceupdown);
             Label persistancelabel = new Label
@@ -179,6 +179,7 @@ namespace CSTerrain
                 ForeColor = Form1.DefaultBackColor
             };
             Controls.Add(penbt);
+            penbt.Click += new EventHandler(Penbtnclick);
 
             zoombtn = new Button
             {
@@ -188,6 +189,7 @@ namespace CSTerrain
                 Font = new Font("Arial", 8)
             };
             Controls.Add(zoombtn);
+            zoombtn.Click += new EventHandler(Zoombtnclick);
 
             dragbtn = new Button
             {
@@ -196,8 +198,36 @@ namespace CSTerrain
                 Size = new Size(68, 25)
             };
             Controls.Add(dragbtn);
+            dragbtn.Click += new EventHandler(Dragbtnclick);
         }
 
+        private void Penbtnclick(object sender, EventArgs e) => SelectMode(0);
+        private void Dragbtnclick(object sender, EventArgs e) => SelectMode(1);
+        private void Zoombtnclick(object sender, EventArgs e) => SelectMode(2);
+
+        private void SelectMode(int mode)
+        {
+            zoombtn.BackColor = dragbtn.BackColor = penbt.BackColor = Form1.DefaultBackColor;
+            zoombtn.ForeColor = dragbtn.ForeColor = penbt.ForeColor = Color.Black;
+            if (mode == 0)
+            {
+                penbt.BackColor = Color.DarkGray;
+                penbt.ForeColor = Form1.DefaultBackColor;
+                mode = 0;
+            }
+            else if (mode == 1)
+            {
+                dragbtn.BackColor = Color.DarkGray;
+                dragbtn.ForeColor = Form1.DefaultBackColor;
+                mode = 1;
+            }
+            else
+            {
+                zoombtn.BackColor = Color.DarkGray;
+                zoombtn.ForeColor = Form1.DefaultBackColor;
+                mode = 2;
+            }
+        }
 
         private void SimplexRegen(object sender, EventArgs e)
         {
@@ -258,17 +288,18 @@ namespace CSTerrain
         private void Saveobj(object sender, EventArgs e)
         {
             float scale = 0.015f;
-            //college = P:\\csharpterrain\\csharpterrain
+            //college = P:\\CSTerrain\\CSTerrain
             //home = C:\\Users\\iantr\\source\\repos\\csharpterrain\\csharpterrain
-            string path = "C:\\Users\\iantr\\source\\repos\\csharpterrain\\csharpterrain";
+            string path = "P:\\CSTerrain\\CSTerrain";
             new OBJExport(noisemapp).Export(path, scale);
         }
 
+        Point zoomstart;
         //increases the heightmap value on left click/hold and decreases in right click/hold
         private void Picturebox_click(object sender, MouseEventArgs e)
         {
             intensity = e.Button == MouseButtons.Left ? 0.1f : -0.05f;
-
+            if (mode == 2) { zoomstart = e.Location; }
             int x = e.Location.X;
             int y = e.Location.Y;
 
