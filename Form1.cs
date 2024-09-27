@@ -17,11 +17,10 @@ namespace CSTerrain
         int radius = 30;
         float intensity;
         Label heightlabel, radiuslabel;
-        Button perlinregenbtn, simplexregenbtn, voronoiregenbtn, savebtn, penbt, dragbtn, zoombtn;
+        Button perlinregenbtn, simplexregenbtn, savebtn, penbt, dragbtn, zoombtn;
         float[,] noisemapp;
         Bitmap noise_bitmap;
         NumericUpDown scaleupdown, sizeupdown, octavesupdown, persistenceupdown;
-        int mode = 0;
 
 
         public Form1()
@@ -33,7 +32,8 @@ namespace CSTerrain
 
             picturebox1 = new PictureBox
             {
-                Size = new Size(500, 500)
+                Size = new Size(500, 500),
+                SizeMode = PictureBoxSizeMode.StretchImage
             };
             picturebox1.MouseDown += new MouseEventHandler(Picturebox_click);
             picturebox1.MouseUp += new MouseEventHandler(Release_handler);
@@ -66,9 +66,16 @@ namespace CSTerrain
             };
             Controls.Add(radiuslabel);
 
+            Label regenlabel = new Label
+            {
+                Location = new Point(520, 50),
+                Text = "Regenerate using:"
+            };
+            Controls.Add(regenlabel);
+
             perlinregenbtn = new Button
             {
-                Location = new Point(499, 50),
+                Location = new Point(499, 75),
                 Size = new Size(68, 30),
                 Text = "Perlin"
             };
@@ -77,20 +84,12 @@ namespace CSTerrain
 
             simplexregenbtn = new Button
             {
-                Location = new Point(568, 50),
+                Location = new Point(568, 75),
                 Size = new Size(68, 30),
                 Text = "Simplex"
             };
             Controls.Add(simplexregenbtn);
             simplexregenbtn.Click += new EventHandler(SimplexRegen);
-
-            voronoiregenbtn = new Button
-            {
-                Location = new Point(499, 80),
-                Size = new Size(68, 30),
-                Text = "Voronoi"
-            };
-            Controls.Add(voronoiregenbtn);
 
             savebtn = new Button
             {
@@ -158,8 +157,7 @@ namespace CSTerrain
                 Minimum = 0.1M,
                 Maximum = 2M,
                 Value = 0.5M,
-                Increment = 0.1M,
-                DecimalPlaces = 1
+                Increment = 0.1M
             };
             Controls.Add(persistenceupdown);
             Label persistancelabel = new Label
@@ -169,65 +167,8 @@ namespace CSTerrain
                 AutoSize = true
             };
             Controls.Add(persistancelabel);
-
-            penbt = new Button
-            {
-                Text = "Edit terrain",
-                Location = new Point(500, 220),
-                Size = new Size(68, 25),
-                BackColor = Color.DarkGray,
-                ForeColor = Form1.DefaultBackColor
-            };
-            Controls.Add(penbt);
-            penbt.Click += new EventHandler(Penbtnclick);
-
-            zoombtn = new Button
-            {
-                Text = "Zoom in/out",
-                Location = new Point(566, 220),
-                Size = new Size(71, 25),
-                Font = new Font("Arial", 8)
-            };
-            Controls.Add(zoombtn);
-            zoombtn.Click += new EventHandler(Zoombtnclick);
-
-            dragbtn = new Button
-            {
-                Text = "Move",
-                Location = new Point(500, 245),
-                Size = new Size(68, 25)
-            };
-            Controls.Add(dragbtn);
-            dragbtn.Click += new EventHandler(Dragbtnclick);
         }
 
-        private void Penbtnclick(object sender, EventArgs e) => SelectMode(0);
-        private void Dragbtnclick(object sender, EventArgs e) => SelectMode(1);
-        private void Zoombtnclick(object sender, EventArgs e) => SelectMode(2);
-
-        private void SelectMode(int mode)
-        {
-            zoombtn.BackColor = dragbtn.BackColor = penbt.BackColor = Form1.DefaultBackColor;
-            zoombtn.ForeColor = dragbtn.ForeColor = penbt.ForeColor = Color.Black;
-            if (mode == 0)
-            {
-                penbt.BackColor = Color.DarkGray;
-                penbt.ForeColor = Form1.DefaultBackColor;
-                mode = 0;
-            }
-            else if (mode == 1)
-            {
-                dragbtn.BackColor = Color.DarkGray;
-                dragbtn.ForeColor = Form1.DefaultBackColor;
-                mode = 1;
-            }
-            else
-            {
-                zoombtn.BackColor = Color.DarkGray;
-                zoombtn.ForeColor = Form1.DefaultBackColor;
-                mode = 2;
-            }
-        }
 
         private void SimplexRegen(object sender, EventArgs e)
         {
@@ -245,8 +186,11 @@ namespace CSTerrain
         //updatges the height label on the value of noisemap at mouses location
         private void Mousemove(object sender, MouseEventArgs e)
         {
-            int x = e.Location.X;
-            int y = e.Location.Y;
+
+            float sf = noisemapp.GetLength(0) / 500f;
+
+            int x = (int)(e.Location.X * sf);
+            int y = (int)(e.Location.Y * sf);
             if (x > noisemapp.GetLength(0) - 1 || x < 0 || noisemapp == null || y < 0 || y > noisemapp.GetLength(1) - 1)
             {
                 return;
@@ -269,39 +213,27 @@ namespace CSTerrain
                 }
             }
             radiuslabel.Text = $"Radius: {radius}";
-
-
-            //draw radius 
-            //using (Graphics g = picturebox1.CreateGraphics())
-            //{
-            //    using (Brush br = new SolidBrush(Color.FromArgb(50, 150, 0, 0)))
-            //    {
-            //        g.FillEllipse(br, new Rectangle(new Point(PointToClient(MousePosition).X - radius, PointToClient(MousePosition).Y - radius), new Size(radius * 2, radius * 2)));
-            //    }
-            //    g.Dispose();
-            //}
-            //await Task.Delay(700);
-            //Draw_Bitmap(noise_bitmap);
         }
 
         //saves the noisemap as an obj file on click with either home or college file paths
         private void Saveobj(object sender, EventArgs e)
         {
             float scale = 0.015f;
-            //college = P:\\CSTerrain\\CSTerrain
+            //college = P:\\csharpterrain\\csharpterrain
             //home = C:\\Users\\iantr\\source\\repos\\csharpterrain\\csharpterrain
-            string path = "P:\\CSTerrain\\CSTerrain";
+            string path = "C:\\Users\\iantr\\source\\repos\\csharpterrain\\csharpterrain";
             new OBJExport(noisemapp).Export(path, scale);
         }
 
-        Point zoomstart;
         //increases the heightmap value on left click/hold and decreases in right click/hold
         private void Picturebox_click(object sender, MouseEventArgs e)
         {
             intensity = e.Button == MouseButtons.Left ? 0.1f : -0.05f;
-            if (mode == 2) { zoomstart = e.Location; }
-            int x = e.Location.X;
-            int y = e.Location.Y;
+
+            float sf =  noisemapp.GetLength(0) / 500f;
+
+            int x = (int)(e.Location.X * sf);
+            int y = (int)(e.Location.Y * sf);
 
             Update_bitmap(x, y, radius, intensity);
             timer2.Start();
@@ -312,10 +244,10 @@ namespace CSTerrain
         private void Update_bitmap(int x, int y, int radius, float intesity)
         {
             int xmin = Math.Max(0, x - radius);
-            int xmax = Math.Min(this.Height, x + radius);
+            int xmax = Math.Min(noisemapp.GetLength(0) - 1, x + radius);
 
             int ymin = Math.Max(0, y - radius);
-            int ymax = Math.Min(this.Height, y + radius);
+            int ymax = Math.Min(noisemapp.GetLength(1) - 1, y + radius);
 
             Edit_bitmap(xmin, xmax, ymin, ymax, radius, intesity, x, y);
             Draw_Bitmap(noise_bitmap);
@@ -324,7 +256,7 @@ namespace CSTerrain
         //edits the bitmap depending on parameters from updatebitmap
         private Bitmap Edit_bitmap(int xmin, int xmax, int ymin, int ymax, int radius, float base_intensity, int x, int y)
         {
-            noise_bitmap = new Bitmap(picturebox1.Width, picturebox1.Height);
+            noise_bitmap = new Bitmap(noisemapp.GetLength(0) - 1, noisemapp.GetLength(1) - 1);
             for (int i = xmin; i < xmax; i++)
             {
                 for (int j = ymin; j < ymax; j++)
@@ -350,15 +282,18 @@ namespace CSTerrain
         {
             using (Graphics g = picturebox1.CreateGraphics())
             {
-                g.DrawImage(noise_bitmap, new Point(0, 0));
+                g.DrawImage(noise_bitmap, new Rectangle(0, 0, picturebox1.Width, picturebox1.Height));
             }
         }
 
         //upodates the position based on the mouse position when mouse is held
         private void Drag_handler(object sender, EventArgs e)
         {
-            int x = PointToClient(MousePosition).X;
-            int y = PointToClient(MousePosition).Y;
+            float sf = noisemapp.GetLength(0) / 500f;
+
+            int x = (int)(PointToClient(MousePosition).X * sf);
+            int y = (int)(PointToClient(MousePosition).Y * sf);
+
             Update_bitmap(x, y, radius, intensity);
         }
 
