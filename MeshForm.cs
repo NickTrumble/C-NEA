@@ -1,10 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -13,9 +8,9 @@ namespace CSTerrain
     public partial class MeshForm : Form
     {
         Button MainForm;
-        int[,] heightmap;
+        float[,] heightmap;
         DrawMesh drawer;
-        int scale = 8;
+        int scale = 70;
         int xoffset, yoffset;
         Label heightlabel;
         Bitmap b;
@@ -26,7 +21,7 @@ namespace CSTerrain
             this.Width = 1000;
             this.Height = 800;
             xoffset = Width / 2;
-            yoffset = 80;
+            yoffset = 150;
             MainForm = new Button
             {
                 Location = new Point(0, 0),
@@ -52,19 +47,20 @@ namespace CSTerrain
         {
             int size = Input.GetLength(0);
             int[,] Output = new int[size, size];
-            for (int i = 0; i < size; i++)
+            Parallel.For(0, size, i =>
             {
                 for (int j = 0; j < size; j++)
                 {
                     Output[i, j] = (int)(10 * Input[i, j]);
                 }
-            }
+            });
+
             return Output;
         }
 
         public void TakeHeightmap(float[,] h)
         {
-            heightmap = FloatToInt(h);
+            heightmap = h;
             drawer = new DrawMesh(heightmap, xoffset, yoffset, scale);
             CreateBitmap();
             Invalidate();
