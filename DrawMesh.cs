@@ -34,12 +34,17 @@ namespace CSTerrain
 
         public Color GetColour(int elevation)
         {
-            int intensity = Math.Min(255, 25 + elevation * 23);
-            return Color.FromArgb(intensity, 20, 255 - intensity);
+            int intensity = Math.Min(127, elevation * 13);
+            return Color.FromArgb(128 + intensity, 2 * intensity, 128 + intensity);
         }
 
         public void Draw(Graphics g)
         {
+            Color[] Colours = new Color[12]
+            {
+                GetColour(0), GetColour(1), GetColour(2), GetColour(3), GetColour(4), GetColour(5),
+                GetColour(6), GetColour(7), GetColour(8), GetColour(9), GetColour(9), GetColour(10)
+            };
             int size = heightmap.GetLength(0);
 
             for (int i = 0; i < size - 1; i++)
@@ -52,8 +57,7 @@ namespace CSTerrain
                     corners1[2] = PointCalc(i + 1, j, heightmap[i + 1, j]);
 
                     int avgh = (heightmap[i, j] + heightmap[i + 1, j] + heightmap[i, j + 1]) / 3;
-                    Color c = GetColour(avgh);
-                    Brush b = new SolidBrush(c);
+                    Brush b = new SolidBrush(Colours[avgh + 1]);
 
                     g.FillPolygon(b, corners1);
 
@@ -63,8 +67,7 @@ namespace CSTerrain
                     corners2[2] = PointCalc(i + 1, j, heightmap[i + 1, j]);
 
                     int avgh2 = (heightmap[i, j] + heightmap[i + 1, j] + heightmap[i, j + 1]) / 3;
-                    Color c2 = GetColour(avgh2);
-                    Brush b2 = new SolidBrush(c2);
+                    Brush b2 = new SolidBrush(Colours[avgh2 + 1]);
 
                     g.FillPolygon(b2, corners2);
                 }
