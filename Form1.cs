@@ -17,7 +17,7 @@ namespace CSTerrain
         int radius = 30;
         float intensity;
         Label heightlabel, radiuslabel;
-        Button perlinregenbtn, simplexregenbtn, savebtn, penbt, dragbtn, zoombtn, MeshFormbtn;
+        Button perlinregenbtn, simplexregenbtn, savebtn, MeshFormbtn;
         float[,] noisemapp;
         Bitmap noise_bitmap;
         NumericUpDown scaleupdown, sizeupdown, octavesupdown, persistenceupdown, islandmixupdown;
@@ -251,13 +251,15 @@ namespace CSTerrain
         }
 
         //saves the noisemap as an obj file on click with either home or college file paths
-        private void Saveobj(object sender, EventArgs e)
+        private async void Saveobj(object sender, EventArgs e)
         {
             float scale = 0.015f;
             //college = P:\\csharpterrain\\csharpterrain
             //home = C:\\Users\\iantr\\source\\repos\\CSTerrain\\CSTerrain
             string path = "C:\\Users\\iantr\\source\\repos\\CSTerrain\\CSTerrain";
-            new OBJExport(noisemapp).Export(path, scale);
+
+            OBJExport exp = new OBJExport(noisemapp);
+            await exp.Export(path, scale);
         }
 
         //increases the heightmap value on left click/hold and decreases in right click/hold
@@ -335,7 +337,7 @@ namespace CSTerrain
         //generates the noisemap and draws it at hte start of the program
         private void Timer1_Tick(object sender, EventArgs e)
         {
-            Generate(0.006f, 6, 0.5f, 500, 0, 0.3f);
+            Generate(0.006f, 6, 0.5f, 500, 0, 0f);
             picturebox1.MouseMove += new MouseEventHandler(Mousemove);
             timer1.Stop();
         }
@@ -345,7 +347,6 @@ namespace CSTerrain
         {
             PerlinNoise Pnoisegen = new PerlinNoise(size, octaves, persistance, scale);
             SimplexNoise Snoisegen = new SimplexNoise(size, octaves, persistance, scale);
-            float[,] noisemap = new float[size, size];
             if (mode == 0)
             {
                 noisemapp = PerlinNoise.Normalise(Pnoisegen.Gen_array());
