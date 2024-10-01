@@ -9,13 +9,13 @@ namespace CSTerrain
 {
     class DrawMesh
     {
-        public int[,] heightmap { get; set; }
+        public float[,] heightmap { get; set; }
         public int xoffset { get; set; }
         public int yoffset { get; set; }
         public int tilewidth { get; set; }
         public int tileheight { get; set; }
         public int scale { get; set; }
-        public DrawMesh(int[,] inTerrain, int xo, int yo, int s)
+        public DrawMesh(float[,] inTerrain, int xo, int yo, int s)
         {
             heightmap = inTerrain;
             xoffset = xo;
@@ -25,26 +25,28 @@ namespace CSTerrain
             scale = s;
         }
 
-        public Point PointCalc(int x, int y, int z)
+        public Point PointCalc(int x, int y, float z)
         {
             int X = xoffset + (x - y) * tilewidth / 2;
-            int Y = yoffset + (x + y) * tileheight / 2 - z * scale;
+            int Y = (int)(yoffset + (x + y) * tileheight / 2 - z * scale);
             return new Point(X, Y);
         }
 
         public Color GetColour(int elevation)
         {
             int intensity = Math.Min(127, elevation * 13);
-            return Color.FromArgb(128 + intensity, 2 * intensity, 128 + intensity);
+            return Color.FromArgb(2 * intensity, 2 * intensity, 128 + intensity);
         }
 
         public void Draw(Graphics g)
         {
-            Color[] Colours = new Color[12]
+            Color[] Colours = new Color[50];
+            
+            for (int i = 0; i < 50; i++)
             {
-                GetColour(0), GetColour(1), GetColour(2), GetColour(3), GetColour(4), GetColour(5),
-                GetColour(6), GetColour(7), GetColour(8), GetColour(9), GetColour(9), GetColour(10)
-            };
+                float a = i / 50f;
+                Colours[i] = TerrainCmap.Interpolate_value(a);
+            }
             int size = heightmap.GetLength(0);
 
             for (int i = 0; i < size - 1; i++)
@@ -56,8 +58,8 @@ namespace CSTerrain
                     corners1[1] = PointCalc(i, j + 1, heightmap[i, j + 1]);
                     corners1[2] = PointCalc(i + 1, j, heightmap[i + 1, j]);
 
-                    int avgh = (heightmap[i, j] + heightmap[i + 1, j] + heightmap[i, j + 1]) / 3;
-                    Brush b = new SolidBrush(Colours[avgh + 1]);
+                    float avgh = (heightmap[i, j] + heightmap[i + 1, j] + heightmap[i, j + 1]) / 3;
+                    Brush b = new SolidBrush(Colours[(int)(50 * avgh)]);
 
                     g.FillPolygon(b, corners1);
 
@@ -66,12 +68,12 @@ namespace CSTerrain
                     corners2[1] = PointCalc(i, j + 1, heightmap[i, j + 1]);
                     corners2[2] = PointCalc(i + 1, j, heightmap[i + 1, j]);
 
-                    int avgh2 = (heightmap[i, j] + heightmap[i + 1, j] + heightmap[i, j + 1]) / 3;
-                    Brush b2 = new SolidBrush(Colours[avgh2 + 1]);
+                    float avgh2 = (heightmap[i, j] + heightmap[i + 1, j] + heightmap[i, j + 1]) / 3;
+                    Brush b2 = new SolidBrush(Colours[(int)(50 * avgh2)]);
 
                     g.FillPolygon(b2, corners2);
                 }
-            }
+            }            
         }
     }
 }
