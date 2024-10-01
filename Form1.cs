@@ -17,10 +17,10 @@ namespace CSTerrain
         int radius = 30;
         float intensity;
         Label heightlabel, radiuslabel;
-        Button perlinregenbtn, simplexregenbtn, savebtn, penbt, dragbtn, zoombtn;
+        Button perlinregenbtn, simplexregenbtn, savebtn, penbt, dragbtn, zoombtn, MeshFormbtn;
         float[,] noisemapp;
         Bitmap noise_bitmap;
-        NumericUpDown scaleupdown, sizeupdown, octavesupdown, persistenceupdown;
+        NumericUpDown scaleupdown, sizeupdown, octavesupdown, persistenceupdown, islandmixupdown;
 
 
         public Form1()
@@ -157,7 +157,8 @@ namespace CSTerrain
                 Minimum = 0.1M,
                 Maximum = 2M,
                 Value = 0.5M,
-                Increment = 0.1M
+                Increment = 0.1M,
+                DecimalPlaces = 1
             };
             Controls.Add(persistenceupdown);
             Label persistancelabel = new Label
@@ -167,20 +168,54 @@ namespace CSTerrain
                 AutoSize = true
             };
             Controls.Add(persistancelabel);
+
+            Label IslandMix = new Label
+            {
+                Text = "Island value: ",
+                Location = new Point(500, 210),
+                AutoSize = true
+            };
+            Controls.Add(IslandMix);
+
+            islandmixupdown = new NumericUpDown
+            {
+                Location = new Point(570, 210),
+                Minimum = -5,
+                Maximum = 10,
+                Value = 1
+            };
+            Controls.Add(islandmixupdown);
+
+            MeshFormbtn = new Button
+            {
+                Location = new Point(500, 235),
+                Text = "Create Mesh",
+                Size = new Size(136, 30)
+            };
+            Controls.Add(MeshFormbtn);
+            MeshFormbtn.Click += new EventHandler(ToMeshForm);
         }
 
+        private void ToMeshForm(object sender, EventArgs e)
+        {
+            MeshForm form2 = new MeshForm();
+            form2.Show();
+            form2.TakeHeightmap(noisemapp); 
+            this.Hide();
+            
+        }
 
         private void SimplexRegen(object sender, EventArgs e)
         {
             Generate((float)scaleupdown.Value * 0.001f, (int)octavesupdown.Value,
-                     (float)persistenceupdown.Value, (int)sizeupdown.Value, 1);
+                     (float)persistenceupdown.Value, (int)sizeupdown.Value, 1, (float)islandmixupdown.Value / 10f);
         }
 
         //Regenerate Noisemap and redraw bitmap on click in perlin noise
         private void PerlinRegen(object sender, EventArgs e)
         {
             Generate((float)scaleupdown.Value * 0.001f, (int)octavesupdown.Value,
-                     (float)persistenceupdown.Value, (int)sizeupdown.Value, 0);
+                     (float)persistenceupdown.Value, (int)sizeupdown.Value, 0, (float)islandmixupdown.Value / 10f);
         }
 
         //updatges the height label on the value of noisemap at mouses location
@@ -220,8 +255,8 @@ namespace CSTerrain
         {
             float scale = 0.015f;
             //college = P:\\csharpterrain\\csharpterrain
-            //home = C:\\Users\\iantr\\source\\repos\\csharpterrain\\csharpterrain
-            string path = "C:\\Users\\iantr\\source\\repos\\csharpterrain\\csharpterrain";
+            //home = C:\\Users\\iantr\\source\\repos\\CSTerrain\\CSTerrain
+            string path = "C:\\Users\\iantr\\source\\repos\\CSTerrain\\CSTerrain";
             new OBJExport(noisemapp).Export(path, scale);
         }
 
@@ -300,24 +335,28 @@ namespace CSTerrain
         //generates the noisemap and draws it at hte start of the program
         private void Timer1_Tick(object sender, EventArgs e)
         {
-            Generate(0.006f, 6, 0.5f, 500, 0);
+            Generate(0.006f, 6, 0.5f, 500, 0, 0.3f);
             picturebox1.MouseMove += new MouseEventHandler(Mousemove);
             timer1.Stop();
         }
 
         //Generates a new noise map and draws it on picturebox 1
-        private void Generate(float scale, int octaves, float persistance, int size, int mode)
+        private void Generate(float scale, int octaves, float persistance, int size, int mode, float mix)
         {
             PerlinNoise Pnoisegen = new PerlinNoise(size, octaves, persistance, scale);
             SimplexNoise Snoisegen = new SimplexNoise(size, octaves, persistance, scale);
+            float[,] noisemap = new float[size, size];
             if (mode == 0)
             {
                 noisemapp = PerlinNoise.Normalise(Pnoisegen.Gen_array());
+                noisemapp = SimplexNoise.Normalise(Snoisegen.Gen_array());
+                noisemapp = BaseNoise.IslandShaper(noisemapp, mix);
                 Draw_Bitmap(Pnoisegen.Gen_bitmap(noisemapp));
             }
             else
             {
                 noisemapp = SimplexNoise.Normalise(Snoisegen.Gen_array());
+                noisemapp = BaseNoise.IslandShaper(noisemapp, mix);
                 Draw_Bitmap(Snoisegen.Gen_bitmap(noisemapp));
             }
         }
