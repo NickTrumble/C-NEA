@@ -51,7 +51,6 @@ namespace CSTerrain
 
         public void Draw(Graphics g)
         {
-            Stopwatch stopwatch = Stopwatch.StartNew();
             Color[] Colours = new Color[50];
             float cos = (float)Math.Cos(MeshForm.rotationslider.Value * (Math.PI / 180));
             float sin = (float)Math.Sin(MeshForm.rotationslider.Value * (Math.PI / 180));
@@ -89,8 +88,6 @@ namespace CSTerrain
                     g.FillPolygon(b2, corners2);
                 }
             }
-            stopwatch.Stop();
-            MessageBox.Show($"Draw method: {stopwatch.ElapsedMilliseconds}");
         }
     }
 }
