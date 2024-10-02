@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -17,18 +17,23 @@ namespace CSTerrain
         int radius = 30;
         float intensity;
         Label heightlabel, radiuslabel;
-        Button perlinregenbtn, simplexregenbtn, savebtn, MeshFormbtn;
+        Button perlinregenbtn, simplexregenbtn, savebtn, MeshFormbtn, Undobtn, Redobtn;
         float[,] noisemapp;
         Bitmap noise_bitmap;
         NumericUpDown scaleupdown, sizeupdown, octavesupdown, persistenceupdown, islandmixupdown;
-
-
+        static bool started;
+        Stack<float[,]> UndoStack, RedoStack;
+        float[,] temp;
         public Form1()
         {
             InitializeComponent();
             this.Width = 650;
             this.Height = 500;
             this.Text = "Noisemap Visualiser";
+
+            UndoStack = new Stack<float[,]>();
+            RedoStack = new Stack<float[,]>();
+            
 
             picturebox1 = new PictureBox
             {
@@ -41,159 +46,157 @@ namespace CSTerrain
 
             Controls.Add(picturebox1);
 
-            timer1 = new Timer
-            {
-                Enabled = true
-            };
+            timer1 = new Timer { Enabled = true };
             timer1.Tick += new EventHandler(Timer1_Tick);
 
-            timer2 = new Timer
-            {
-                Interval = 5
-            };
+            timer2 = new Timer { Interval = 5 };
             timer2.Tick += new EventHandler(Drag_handler);
 
-            heightlabel = new Label
-            {
-                Location = new Point(500, 0),
-                Text = "[0, 0] = 0.0"
-            };
-            Controls.Add(heightlabel);
-            radiuslabel = new Label
-            {
-                Location = new Point(500, 25),
-                Text = $"Radius: {radius}"
-            };
-            Controls.Add(radiuslabel);
+            //Height label
+            heightlabel = LabelMaker(new Point(500, 0), "[0, 0] = 0.0");
 
-            Label regenlabel = new Label
-            {
-                Location = new Point(520, 50),
-                Text = "Regenerate using:"
-            };
-            Controls.Add(regenlabel);
+            //Radius label
+            radiuslabel = LabelMaker(new Point(500, 25), "Radius: 30");
 
-            perlinregenbtn = new Button
-            {
-                Location = new Point(499, 75),
-                Size = new Size(68, 30),
-                Text = "Perlin"
-            };
+            //Regen label
+            LabelMaker(new Point(520, 50), "Regenerate using:");
+
+            //Scale label & nud
+            LabelMaker(new Point(500, 110), "Scale:");
+            scaleupdown = NudMaker(new Point(570, 110), 6f, 1f, 16f, 1f);
+
+            //Size label & nud
+            LabelMaker(new Point(500, 135), "Size:");
+            sizeupdown = NudMaker(new Point(570, 135), 500f, 50f, 2000f, 2f);
+
+            //Octaves label & nud
+            LabelMaker(new Point(500, 160), "Octaves: ");
+            octavesupdown = NudMaker(new Point(570, 160), 6f, 1f, 10f, 2f);
+
+            //Persistance label & nud
+            LabelMaker(new Point(500, 185), "Persistance: ");
+            persistenceupdown = NudMaker(new Point(570, 185), 0.5f, 0.1f, 2f, 0.1f);
+
+            //island label & nud
+            LabelMaker(new Point(500, 210), "Island value: ");
+            islandmixupdown = NudMaker(new Point(570, 210), 1f, -5f, 10f, 1f);
+
+            perlinregenbtn = ButtonMaker(new Point(499, 75), "Perlin", new Size(68, 30));
             perlinregenbtn.Click += new EventHandler(PerlinRegen);
-            Controls.Add(perlinregenbtn);
 
-            simplexregenbtn = new Button
-            {
-                Location = new Point(568, 75),
-                Size = new Size(68, 30),
-                Text = "Simplex"
-            };
-            Controls.Add(simplexregenbtn);
+            simplexregenbtn = ButtonMaker(new Point(568, 75), "Simplex", new Size(68, 30));
             simplexregenbtn.Click += new EventHandler(SimplexRegen);
 
-            savebtn = new Button
-            {
-                Text = "Save Noisemap",
-                Location = new Point(499, 430),
-                Size = new Size(136, 30)
-            };
+            savebtn = ButtonMaker(new Point(499, 430), "Save Noisemap", new Size(136, 30));
             savebtn.Click += new EventHandler(Saveobj);
-            Controls.Add(savebtn);
 
-            scaleupdown = new NumericUpDown
-            {
-                Location = new Point(570, 110),
-                Value = 6,
-                Minimum = 1,
-                Maximum = 16,
-                Increment = 1
-            };
-            Controls.Add(scaleupdown);
-            Label scalelabel = new Label
-            {
-                Location = new Point(500, 110),
-                AutoSize = true,
-                Text = "Scale:"
-            };
-            Controls.Add(scalelabel);
-
-            sizeupdown = new NumericUpDown
-            {
-                Location = new Point(570, 135),
-                Minimum = 50,
-                Maximum = 2000,
-                Value = 500,
-                Increment = 2
-            };
-            Controls.Add(sizeupdown);
-            Label sizelabel = new Label
-            {
-                Location = new Point(500, 135),
-                Text = "Size:",
-                AutoSize = true
-            };
-            Controls.Add(sizelabel);
-
-            octavesupdown = new NumericUpDown
-            {
-                Location = new Point(570, 160),
-                Minimum = 1,
-                Maximum = 10,
-                Value = 6,
-                Increment = 2
-            };
-            Controls.Add(octavesupdown);
-            Label octaveslabel = new Label
-            {
-                Text = "Octaves: ",
-                Location = new Point(500, 160),
-                AutoSize = true
-            };
-            Controls.Add(octaveslabel);
-
-            persistenceupdown = new NumericUpDown
-            {
-                Location = new Point(570, 185),
-                Minimum = 0.1M,
-                Maximum = 2M,
-                Value = 0.5M,
-                Increment = 0.1M,
-                DecimalPlaces = 1
-            };
-            Controls.Add(persistenceupdown);
-            Label persistancelabel = new Label
-            {
-                Text = "Persistance: ",
-                Location = new Point(500, 185),
-                AutoSize = true
-            };
-            Controls.Add(persistancelabel);
-
-            Label IslandMix = new Label
-            {
-                Text = "Island value: ",
-                Location = new Point(500, 210),
-                AutoSize = true
-            };
-            Controls.Add(IslandMix);
-
-            islandmixupdown = new NumericUpDown
-            {
-                Location = new Point(570, 210),
-                Minimum = -5,
-                Maximum = 10,
-                Value = 1
-            };
-            Controls.Add(islandmixupdown);
-
-            MeshFormbtn = new Button
-            {
-                Location = new Point(500, 235),
-                Text = "Create Mesh",
-                Size = new Size(136, 30)
-            };
-            Controls.Add(MeshFormbtn);
+            MeshFormbtn = ButtonMaker(new Point(500, 235), "Create Mesh", new Size(136, 30));
             MeshFormbtn.Click += new EventHandler(ToMeshForm);
+
+            Undobtn = ButtonMaker(new Point(500, 270), "Undo", new Size(68, 30));
+            Undobtn.Click += new EventHandler(Undo);
+            Redobtn = ButtonMaker(new Point(568, 270), "Redo", new Size(68, 30));
+            Redobtn.Click += new EventHandler(Redo);
+        }
+
+        private void Undo(object sender, EventArgs e)
+        {
+            if(UndoStack.Count > 0)
+            {
+                RedoStack.Push(CopytoNewfloat(noisemapp));
+                noisemapp = UndoStack.Pop();
+                temp = CopytoNewfloat(noisemapp);
+                Draw_Bitmap(FloattoBitmap(noisemapp));
+            }
+        }
+
+        private void Redo(object sender, EventArgs e)
+        {
+            if (RedoStack.Count > 0)
+            {
+                UndoStack.Push(CopytoNewfloat(noisemapp));
+                noisemapp = RedoStack.Pop();
+                Draw_Bitmap(FloattoBitmap(noisemapp));
+            }
+        }
+
+        private float[,] CopytoNewfloat(float[,] a)
+        {
+            int size = a.GetLength(0);
+            float[,] b = new float[size, size];
+            for (int i = 0; i < size; i++)
+            {
+                for (int j = 0; j < size; j++)
+                {
+                    b[i, j] = a[i, j];
+                }
+            }
+            return b;
+        }
+
+        private Bitmap FloattoBitmap(float[,] a)
+        {
+            int size = a.GetLength(0);
+            Bitmap bit = new Bitmap(size, size);
+            
+            for (int i = 0; i < size; i++)
+            {
+                for (int j = 0; j < size; j++)
+                {
+                    bit.SetPixel(i, j, TerrainCmap.Interpolate_value(noisemapp[i, j]));
+                }
+            }
+            return bit;
+        }
+
+        private Button ButtonMaker(Point location, string text, Size size)
+        {
+            Button button = new Button
+            {
+                Text = text,
+                Size = size,
+                Location = location
+            };
+            Controls.Add(button);
+            return button;
+        }
+
+        private Label LabelMaker(Point location, string text)
+        {
+            Label label = new Label
+            {
+                Text = text,
+                AutoSize = true,
+                Location = location
+            };
+            Controls.Add(label);
+            return label;
+        }
+
+        private NumericUpDown NudMaker(Point location, float val, float min, float max, float inc)
+        {
+            if (inc >= 1)
+            {
+                min = (int)min;
+                max = (int)max;
+                val = (int)val;
+            }
+            NumericUpDown nud = new NumericUpDown
+            {
+                Location = location,
+                Increment = (decimal)inc,
+                Minimum = (decimal)min,
+                Maximum = (decimal)max,
+                Value = (decimal)val
+            };
+            Controls.Add(nud);
+            return nud;
+        }
+
+        public void TakeNoisemap(float[,] noisemap)
+        {
+            noisemapp = noisemap;
+            Draw_Bitmap(BaseNoise.Gen_bitmap(noisemapp));
         }
 
         private void ToMeshForm(object sender, EventArgs e)
@@ -312,7 +315,14 @@ namespace CSTerrain
         }
 
         //updates the timer to stop the mouse moving and changing the heightmap
-        private void Release_handler(object sender, MouseEventArgs e) => timer2.Stop();
+        private void Release_handler(object sender, MouseEventArgs e) 
+        {
+            
+            UndoStack.Push(CopytoNewfloat(temp));
+            RedoStack.Clear();
+            timer2.Stop();
+            temp = CopytoNewfloat(noisemapp);
+        } 
 
         //redraw the nopisemap bitmap on picturebox 1
         private void Draw_Bitmap(Bitmap noise_bitmap)
@@ -337,7 +347,11 @@ namespace CSTerrain
         //generates the noisemap and draws it at hte start of the program
         private void Timer1_Tick(object sender, EventArgs e)
         {
-            Generate(0.006f, 6, 0.5f, 500, 0, 0f);
+            if (started != true)
+            {
+                Generate(0.006f, 6, 0.5f, 500, 0, 0f);
+                started = true;
+            }
             picturebox1.MouseMove += new MouseEventHandler(Mousemove);
             timer1.Stop();
         }
@@ -352,14 +366,17 @@ namespace CSTerrain
                 noisemapp = PerlinNoise.Normalise(Pnoisegen.Gen_array());
                 noisemapp = SimplexNoise.Normalise(Snoisegen.Gen_array());
                 noisemapp = BaseNoise.IslandShaper(noisemapp, mix);
-                Draw_Bitmap(Pnoisegen.Gen_bitmap(noisemapp));
+                Draw_Bitmap(PerlinNoise.Gen_bitmap2(noisemapp));
             }
             else
             {
                 noisemapp = SimplexNoise.Normalise(Snoisegen.Gen_array());
                 noisemapp = BaseNoise.IslandShaper(noisemapp, mix);
-                Draw_Bitmap(Snoisegen.Gen_bitmap(noisemapp));
+                Draw_Bitmap(SimplexNoise.Gen_bitmap2(noisemapp));
             }
+            temp = CopytoNewfloat(noisemapp);
+            UndoStack = new Stack<float[,]>();
+            RedoStack = new Stack<float[,]>();
         }
     }
 }

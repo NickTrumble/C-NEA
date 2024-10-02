@@ -16,8 +16,6 @@ namespace CSTerrain
         //smoothens transitions between gradient vectors
         static float Fade_function(float f) => f * f * f * (f * (f * 6 - 15) + 10);//blend
 
-        // linear interpolation between a and b, with interpolation value = t
-        static float Lerp_function(float f, float a, float b) => a + f * (b - a);//interpolation
 
         //generates a single octave of the perlin noise to be combined into multiple
         public override float Single_octave(float x, float y)

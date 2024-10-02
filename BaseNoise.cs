@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Runtime.InteropServices;
+using System.Drawing.Imaging;
 
 
 namespace CSTerrain
@@ -76,8 +78,54 @@ namespace CSTerrain
             return noisemap;
         }
 
+
+        // linear interpolation between a and b, with interpolation value = t
+        public static float Lerp_function(float f, float a, float b) => a + f * (b - a);//interpolation
+
+        public static Bitmap Gen_bitmap2(float[,] noisemap)
+        {
+            int size = noisemap.GetLength(0);
+            Bitmap b = new Bitmap(size, size);
+
+            //lock the bitmap into memory
+            BitmapData bmpd = b.LockBits(new Rectangle(0, 0, size, size), ImageLockMode.ReadWrite, b.PixelFormat);
+            //gets a pointer to point to the memory location ofthe data
+            IntPtr pointer = bmpd.Scan0;
+
+            int bytes = bmpd.Stride * size;//bits per row * height(size)
+            byte[] values = new byte[bytes]; //create an array for the pixel data
+
+            //copy values of the bitmap data into the array values
+            Marshal.Copy(pointer, values, 0, bytes);
+
+            Parallel.For(0, size, i =>
+            {
+                for (int j = 0; j < size; j++)
+                {
+                    float val = noisemap[i, j];
+                    Color c = TerrainCmap.Interpolate_value(val);//calculate colour
+                    
+                    int position = (j * bmpd.Stride) + (i * 4);//rows * bits per row + columns * bits per pixel 
+
+
+                    values[position] = c.B;
+                    values[position + 1] = c.G;
+                    values[position + 2] = c.R;
+                    values[position + 3] = c.A;
+                }
+            });
+            //copy the modified pixels back into the bitmap
+            Marshal.Copy(values, 0, pointer, bytes);
+
+            //unlock(update) the bitymap
+            b.UnlockBits(bmpd);
+
+            return b;
+        }
+
+
         //generatesd the array in bitmap form
-        public Bitmap Gen_bitmap(float[,] noisemap)
+        public static Bitmap Gen_bitmap(float[,] noisemap)
         {
             int size = Num_samples;
             Bitmap noise_bitmap = new Bitmap(size, size);
@@ -127,6 +175,27 @@ namespace CSTerrain
             return noisemap;
         }
 
+        public static float[,] IslandShaper(float[,] noisemap, float t)
+        {
+            int size = noisemap.GetLength(0);
+            float[,] newMap = new float[size, size];
+            
+            for (int i = 0; i < size; i++)
+            {
+                for (int j = 0; j < size; j++)
+                {
+                    float x = 2f * i / size - 1f;
+                    float y = 2f * j / size - 1f;
+
+                    float distance = 1.5f - (1f - x * x) * (1f - y * y);
+
+                    newMap[i, j] = Lerp_function(t, noisemap[i, j], 1 - distance);
+                }
+            }
+
+            return newMap;
+        }
+
         public static int fastfloor(float x) => (x >= 0) ? (int)x : (int)(x - 1);
     }
 
@@ -134,7 +203,7 @@ namespace CSTerrain
     public class Permutation_Gen
     {
         //shuffles the permutatiojn table using a fisher yates shuffle
-        static int[] Shuffle_table(int size, int[] table)
+        public static int[] Shuffle_table(int size, int[] table)
         {
             Random rnd = new Random(Environment.TickCount ^ DateTime.Now.Millisecond);
 

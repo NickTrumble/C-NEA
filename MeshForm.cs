@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -7,13 +7,15 @@ namespace CSTerrain
 {
     public partial class MeshForm : Form
     {
+        public bool started = true;
         Button MainForm;
         float[,] heightmap;
         DrawMesh drawer;
-        int scale = 70;
+        int scale = 200;
         int xoffset, yoffset;
-        Label heightlabel;
         Bitmap b;
+
+        public static TrackBar rotationslider, xpanslider, ypanslider;
         public MeshForm()
         {
             InitializeComponent();
@@ -21,7 +23,7 @@ namespace CSTerrain
             this.Width = 1000;
             this.Height = 800;
             xoffset = Width / 2;
-            yoffset = 150;
+            yoffset = Height / 3;
             MainForm = new Button
             {
                 Location = new Point(0, 0),
@@ -33,15 +35,58 @@ namespace CSTerrain
 
             this.Paint += new PaintEventHandler(PaintHandler);
 
-            heightlabel = new Label
+            rotationslider = new TrackBar
             {
                 Location = new Point(0, 35),
-                Text = "[i, j] = 0.00",
-                AutoSize = true
+                Maximum = 360,
+                Minimum = 0,
+                Value = 45
             };
-            Controls.Add(heightlabel);
+            Controls.Add(rotationslider);
+            rotationslider.ValueChanged += new EventHandler(Rotation);
+
+            xpanslider = new TrackBar
+            {
+                Location = new Point(0, 80),
+                Maximum = 180,
+                Minimum = -180,
+                Value = 0
+            };
+            Controls.Add(xpanslider);
+            xpanslider.ValueChanged += new EventHandler(XPan);
+
+            ypanslider = new TrackBar
+            {
+                Location = new Point(0, 125),
+                Maximum = 180,
+                Minimum = -180,
+                Value = 0
+            };
+            Controls.Add(ypanslider);
+            ypanslider.ValueChanged += new EventHandler(YPan);
         }
 
+        public void YPan(object sender, EventArgs e)
+        {
+            yoffset = (Height / 2) + ypanslider.Value;
+            Invalidate();
+        }
+
+        public void XPan(object sender, EventArgs e)
+        {
+            xoffset = (Width / 2) + xpanslider.Value;
+            Invalidate();
+        }
+
+        public void Rotation(object sender, EventArgs e)
+        {
+            b = new Bitmap(Width, Height);
+            using (Graphics g = Graphics.FromImage(b))
+            {
+                drawer.Draw(g);
+            }
+            Invalidate();
+        }
 
         public int[,] FloatToInt(float[,] Input)
         {
@@ -77,7 +122,7 @@ namespace CSTerrain
         {
             if (b != null)
             {
-                e.Graphics.DrawImage(b, 0, 0);
+                e.Graphics.DrawImage(b, xpanslider.Value, ypanslider.Value);
             }
         }
 
@@ -86,6 +131,7 @@ namespace CSTerrain
             Form1 Home = new Form1();
             Home.Show();
             this.Hide();
+            Home.TakeNoisemap(heightmap);
         }
     }
 }
