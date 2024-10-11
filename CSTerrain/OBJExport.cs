@@ -37,7 +37,7 @@ namespace CSTerrain
                     vertices.Add((x, y, z));
                 }
             }
-            return vertices;
+            return vertices.ToList();
         }
 
         //generates a list of indexed vertices connected to make faces
@@ -45,7 +45,7 @@ namespace CSTerrain
         {
             List<(int, int, int)> faces = new List<(int, int, int)>();
 
-            for(int i = 0; i < row - 2; i++)
+            for (int i = 0; i < row - 2; i++)
             {
                 for (int j = 0; j < col - 2; j++)
                 {
@@ -58,7 +58,7 @@ namespace CSTerrain
                 }
             }
 
-            return faces;
+            return faces.ToList();
         }
 
         //combines all functions to one to export the map
@@ -74,7 +74,7 @@ namespace CSTerrain
             {
                 await f.WriteLineAsync($"v {v.Item1} {v.Item2 * multiplyer} {v.Item3}");
             }
-            
+
             foreach (var face in faces)
             {
                 await f.WriteLineAsync($"f {face.Item1} {face.Item2} {face.Item3}");

@@ -11,82 +11,6 @@ using System.Drawing.Imaging;
 
 namespace CSTerrain
 {
-    public class TempMap
-    {
-        public float[,] terrain { get; set; }
-        public float[,] tempmap { get; set; }
-        public float[,] gradmap { get; set; }
-        public float[,] newmap { get; set; }
-        public int size { get; set; }
-        public TempMap(float[,] Terrain)
-        {
-            terrain = Terrain;
-            size = terrain.GetLength(0);
-            tempmap = new float[size, size];
-            gradmap = new float[size, size];
-        }
-
-        public float[,] GenTmap()
-        {
-            float tmax = 1;
-            float[,] tmap = new float[size, size];
-            float m = 0.1f;
-
-            for (int i = 0; i < size; i++)
-            {
-                for (int j = 0; j < size; j++)
-                {
-                    tmap[i, j] = (float)(tmax * (Math.Sin(m * i) + Math.Cos(m * j)));
-                }
-            }
-            return tmap;
-        }
-
-        public float[,] GenGmap()
-        {
-            float[,] gmap = new float[size, size];
-            int delta = 1;
-            for (int i = 0; i < size; i++)
-            {
-                for (int j = 0; j < size; j++)
-                {
-                    float dx = (float)((terrain[Math.Min(i + delta, size - 1), j] - terrain[Math.Max(i - delta, 0), j]) / 2f * delta);
-                    float dy = (float)((terrain[i, Math.Min(j + delta, size - 1)] - terrain[i, Math.Max(j - delta, 0)]) / 2f * delta);
-                    gmap[i, j] = (float)Math.Sqrt(dx * dx + dy * dy);
-                }
-            }
-            return gmap;
-        }
-
-        public float[,] Generate()
-        {
-            newmap = new float[size, size];
-            for (int a = 0; a < 60; a++)
-            {
-                tempmap = GenTmap();
-                gradmap = GenGmap();
-                float beta = 0.1f;
-
-                for (int i = 0; i < size; i++)
-                {
-                    for (int j = 0; j < size; j++)
-                    {
-                        if (terrain[i,j] > 0.3)
-                        {
-                            newmap[i, j] = terrain[i, j] - beta * gradmap[i, j] * tempmap[i, j];
-                        }
-                        else
-                        {
-                            newmap[i, j] = terrain[i, j];
-                        }
-                    }
-                }
-                terrain = newmap;
-            }
-            return newmap;
-        }
-    }
-
     public class BaseNoise
     {
         public static int[] Ptable { get; set; }
@@ -94,6 +18,7 @@ namespace CSTerrain
         public static int octaves { get; set; }
         public static float persistance { get; set; }
         public static float scale { get; set; }
+        public static float[,] moisturemap { get; set; }
 
         //array for gradiant vectors
         public static float[][] gradients =
@@ -109,6 +34,13 @@ namespace CSTerrain
             octaves = octave;
             persistance = pers;
             scale = scal;
+        }
+
+        public float[,] Gen_Moisture()
+        {
+            Ptable = Permutation_Gen.Generation(Num_samples);
+            float[,] moisturemap = Gen_array();
+            return moisturemap;
         }
 
         //Dot product between gradiant vector g and position vector (x, y)
@@ -154,11 +86,16 @@ namespace CSTerrain
             return noisemap;
         }
 
+        public float RidgedNoise(float val)
+        {
+            return 2f * (0.5f - Math.Abs(0.5f - val));
+        }
+
 
         // linear interpolation between a and b, with interpolation value = t
         public static float Lerp_function(float f, float a, float b) => a + f * (b - a);//interpolation
 
-        public static Bitmap Gen_bitmap2(float[,] noisemap)
+        public static Bitmap Gen_bitmap2(float[,] noisemap, float[,] moisturemap)
         {
             int size = noisemap.GetLength(0);
             Bitmap b = new Bitmap(size, size);
@@ -179,8 +116,8 @@ namespace CSTerrain
                 for (int j = 0; j < size; j++)
                 {
                     float val = noisemap[i, j];
-                    Color c = TerrainCmap.Interpolate_value(val);//calculate colour
-                    
+                    Color c = TerrainCmap.Interpolate_value(val, moisturemap[i, j]);//calculate colour
+
                     int position = (j * bmpd.Stride) + (i * 4);//rows * bits per row + columns * bits per pixel 
 
 
@@ -199,26 +136,6 @@ namespace CSTerrain
             return b;
         }
 
-
-        //generatesd the array in bitmap form
-        public static Bitmap Gen_bitmap(float[,] noisemap)
-        {
-            int size = Num_samples;
-            Bitmap noise_bitmap = new Bitmap(size, size);
-
-            Parallel.For(0, size, i =>
-            {
-                for (int j = 0; j < size; j++)
-                {
-                    Color c = TerrainCmap.Interpolate_value(noisemap[i, j]);
-                    lock (noise_bitmap)
-                    {
-                        noise_bitmap.SetPixel(i, j, c);
-                    }
-                }
-            });
-            return noise_bitmap;
-        }
 
         //normaklises the whole noisemap
         public static float[,] Normalise(float[,] noisemap)
@@ -255,7 +172,7 @@ namespace CSTerrain
         {
             int size = noisemap.GetLength(0);
             float[,] newMap = new float[size, size];
-            
+
             for (int i = 0; i < size; i++)
             {
                 for (int j = 0; j < size; j++)

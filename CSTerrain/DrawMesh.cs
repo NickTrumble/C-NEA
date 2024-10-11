@@ -67,9 +67,9 @@ namespace CSTerrain
             int start = (MeshForm.rotationslider.Value >= 180) ? size - 2 : 0;
             int end = (start == 0) ? size - 2 : 0;
             int step = (start == 0) ? 1 : -1;
-            for (int i = start; i != end; i+= step)
+            for (int i = start; i != end; i += step)
             {
-               for (int j = start; j != end; j+= step)
+                for (int j = start; j != end; j += step)
                 {
                     corners1[0] = PointCalc(i, j, heightmap[i, j], cos, sin);
                     corners1[1] = PointCalc(i, j + 1, heightmap[i, j + 1], cos, sin);
