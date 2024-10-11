@@ -19,8 +19,31 @@ namespace CSTerrain
             Color.White
         };
 
+        public static Color Interpolate_biome(float moisture_value, Color Cin)
+        {
+            Color desertc = Color.FromArgb(200, 200, 0);
+            Color grassc = Color.FromArgb(0, 200, 100);
+            Color snowc = Color.FromArgb(200, 250, 250);
+
+            if (moisture_value < 0.3)
+            {
+                float t = (moisture_value) / 0.3f;
+                return Colour_lerp(Cin, desertc, t);
+            } 
+            else if (moisture_value < 0.7)
+            {
+                float t = (moisture_value - 0.3f) / 0.4f;
+                return Colour_lerp(Cin, grassc, t);
+            } 
+            else
+            {
+                float t = (moisture_value - 0.7f) / 0.3f;
+                return Colour_lerp(Cin, snowc, t);
+            }
+        }
+
         //interpolates between base colours in the cmap depending on the noise value
-        public static Color Interpolate_value(float noise_value)
+        public static Color Interpolate_value(float noise_value, float moisture_value)
         {
 
             if (noise_value < 0.1) // water
@@ -30,22 +53,22 @@ namespace CSTerrain
             else if (noise_value < 0.3) // sansd
             {
                 float t = (noise_value - 0.1f) / 0.2f;
-                return Colour_lerp(cmapC[0], cmapC[1], t);
+                return Interpolate_biome(moisture_value, Colour_lerp(cmapC[0], cmapC[1], t));
             }
             else if (noise_value < 0.5) // grass
             {
                 float t = (noise_value - 0.3f) / 0.2f;
-                return Colour_lerp(cmapC[1], cmapC[2], t);
+                return Interpolate_biome(moisture_value, Colour_lerp(cmapC[1], cmapC[2], t));
             }
             else if (noise_value < 0.7) // rock
             {
                 float t = (noise_value - 0.5f) / 0.2f;
-                return Colour_lerp(cmapC[2], cmapC[3], t);
+                return Interpolate_biome(moisture_value, Colour_lerp(cmapC[2], cmapC[3], t));
             }
             else // snow
             {
                 float t = (noise_value - 0.7f) / 0.3f;
-                return Colour_lerp(cmapC[3], cmapC[4], t);
+                return Interpolate_biome(moisture_value, Colour_lerp(cmapC[3], cmapC[4], t));
             }
         }
 

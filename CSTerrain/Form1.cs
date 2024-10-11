@@ -224,7 +224,7 @@ namespace CSTerrain
         {
             noisemapp = noisemap;
             temp = noisemap;
-            Draw_Bitmap(BaseNoise.Gen_bitmap(noisemapp));
+            Draw_Bitmap(BaseNoise.Gen_bitmap2(noisemapp, moisturemap));
         }
         //switches to mesh form and transfers the current noisemap
         private void ToMeshForm(object sender, EventArgs e)
@@ -394,13 +394,13 @@ namespace CSTerrain
                 noisemapp = BaseNoise.Normalise(Pnoisegen.Gen_array());
                 moisturemap = Pnoisegen.Gen_Moisture();
                 noisemapp = BaseNoise.IslandShaper(noisemapp, mix);
-                Draw_Bitmap(BaseNoise.Gen_bitmap2(noisemapp));
+                Draw_Bitmap(BaseNoise.Gen_bitmap2(noisemapp, moisturemap));
             }
             else
             {
                 noisemapp = BaseNoise.Normalise(Snoisegen.Gen_array());
                 noisemapp = BaseNoise.IslandShaper(noisemapp, mix);
-                Draw_Bitmap(BaseNoise.Gen_bitmap2(noisemapp));
+                Draw_Bitmap(BaseNoise.Gen_bitmap2(noisemapp, moisturemap));
             }
             temp = CopytoNewfloat(noisemapp);
             UndoStack = new Stack<float[,]>();
