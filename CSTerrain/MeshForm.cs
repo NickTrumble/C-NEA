@@ -4,14 +4,14 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace CSTerrain
-{ 
+{
     public partial class MeshForm : Form
     {
         public bool started = true;
         Button MainForm;
         float[,] heightmap;
         DrawMesh drawer;
-        int scale = 100;
+        int scale = 200;
         int xoffset, yoffset;
         Bitmap b;
 
@@ -88,21 +88,6 @@ namespace CSTerrain
             Invalidate();
         }
 
-        public float[,] Round(float[,] Input, float resolution)
-        {
-            int size = Input.GetLength(0);
-            float[,] Output = new float[size, size];
-            Parallel.For(0, size, i =>
-            {
-                for (int j = 0; j < size; j++)
-                {
-                    Output[i, j] = (int)(resolution * Input[i, j]) / resolution;
-                }
-            });
-
-            return Output;
-        }
-
         public int[,] FloatToInt(float[,] Input)
         {
             int size = Input.GetLength(0);
@@ -121,7 +106,7 @@ namespace CSTerrain
         public void TakeHeightmap(float[,] h)
         {
             heightmap = h;
-            drawer = new DrawMesh(Round(heightmap, 40), xoffset, yoffset, scale);
+            drawer = new DrawMesh(heightmap, xoffset, yoffset, scale);
             CreateBitmap();
             Invalidate();
         }
