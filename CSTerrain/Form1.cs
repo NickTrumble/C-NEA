@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -20,7 +20,7 @@ namespace CSTerrain
         Button perlinregenbtn, simplexregenbtn, savebtn, MeshFormbtn, Undobtn, Redobtn;
         float[,] noisemapp;
         Bitmap noise_bitmap;
-        NumericUpDown scaleupdown, sizeupdown, octavesupdown, persistenceupdown, islandmixupdown;
+        NumericUpDown scaleupdown, sizeupdown, octavesupdown, persistenceupdown, islandmixupdown, intensityud;
         static bool started;
         Stack<float[,]> UndoStack, RedoStack;
         float[,] temp;
@@ -33,7 +33,7 @@ namespace CSTerrain
 
             UndoStack = new Stack<float[,]>();
             RedoStack = new Stack<float[,]>();
-            
+
 
             picturebox1 = new PictureBox
             {
@@ -97,11 +97,14 @@ namespace CSTerrain
             Undobtn.Click += new EventHandler(Undo);
             Redobtn = ButtonMaker(new Point(568, 270), "Redo", new Size(68, 30));
             Redobtn.Click += new EventHandler(Redo);
+
+            intensityud = NudMaker(new Point(568, 300), 1f, 1f, 10f, 1f);
+            LabelMaker(new Point(500, 300), "Intensity: ");
         }
 
         private void Undo(object sender, EventArgs e)
         {
-            if(UndoStack.Count > 0)
+            if (UndoStack.Count > 0)
             {
                 RedoStack.Push(CopytoNewfloat(noisemapp));
                 noisemapp = UndoStack.Pop();
@@ -138,7 +141,7 @@ namespace CSTerrain
         {
             int size = a.GetLength(0);
             Bitmap bit = new Bitmap(size, size);
-            
+
             for (int i = 0; i < size; i++)
             {
                 for (int j = 0; j < size; j++)
@@ -196,6 +199,7 @@ namespace CSTerrain
         public void TakeNoisemap(float[,] noisemap)
         {
             noisemapp = noisemap;
+            temp = noisemap;
             Draw_Bitmap(BaseNoise.Gen_bitmap(noisemapp));
         }
 
@@ -203,9 +207,9 @@ namespace CSTerrain
         {
             MeshForm form2 = new MeshForm();
             form2.Show();
-            form2.TakeHeightmap(noisemapp); 
+            form2.TakeHeightmap(noisemapp);
             this.Hide();
-            
+
         }
 
         private void SimplexRegen(object sender, EventArgs e)
@@ -268,9 +272,10 @@ namespace CSTerrain
         //increases the heightmap value on left click/hold and decreases in right click/hold
         private void Picturebox_click(object sender, MouseEventArgs e)
         {
-            intensity = e.Button == MouseButtons.Left ? 0.1f : -0.05f;
+            int val = (int)intensityud.Value;
+            intensity = e.Button == MouseButtons.Left ? 0.01f * val : val * -0.005f;
 
-            float sf =  noisemapp.GetLength(0) / 500f;
+            float sf = noisemapp.GetLength(0) / 500f;
 
             int x = (int)(e.Location.X * sf);
             int y = (int)(e.Location.Y * sf);
@@ -315,14 +320,14 @@ namespace CSTerrain
         }
 
         //updates the timer to stop the mouse moving and changing the heightmap
-        private void Release_handler(object sender, MouseEventArgs e) 
+        private void Release_handler(object sender, MouseEventArgs e)
         {
-            
+
             UndoStack.Push(CopytoNewfloat(temp));
             RedoStack.Clear();
             timer2.Stop();
             temp = CopytoNewfloat(noisemapp);
-        } 
+        }
 
         //redraw the nopisemap bitmap on picturebox 1
         private void Draw_Bitmap(Bitmap noise_bitmap)
@@ -361,7 +366,7 @@ namespace CSTerrain
         {
             PerlinNoise Pnoisegen = new PerlinNoise(size, octaves, persistance, scale);
             SimplexNoise Snoisegen = new SimplexNoise(size, octaves, persistance, scale);
-            
+
             if (mode == 0)
             {
                 noisemapp = BaseNoise.Normalise(Pnoisegen.Gen_array());
