@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -18,11 +18,8 @@ namespace CSTerrain
         float intensity;
         Label heightlabel, radiuslabel;
         Button perlinregenbtn, simplexregenbtn, savebtn, MeshFormbtn, Undobtn, Redobtn;
-        float[,] noisemapp;
         Bitmap noise_bitmap;
         NumericUpDown scaleupdown, sizeupdown, octavesupdown, persistenceupdown, islandmixupdown, intensityud;
-        static bool started;
-        Stack<float[,]> UndoStack, RedoStack;
         float[,] temp;
         public Form1()
         {
@@ -30,10 +27,6 @@ namespace CSTerrain
             this.Width = 650;
             this.Height = 500;
             this.Text = "Noisemap Visualiser";
-
-            UndoStack = new Stack<float[,]>();
-            RedoStack = new Stack<float[,]>();
-
 
             picturebox1 = new PictureBox
             {
@@ -100,26 +93,28 @@ namespace CSTerrain
 
             intensityud = NudMaker(new Point(568, 300), 1f, 1f, 10f, 1f);
             LabelMaker(new Point(500, 300), "Intensity: ");
+
+            temp = Manager.noisemap;
         }
 
         private void Undo(object sender, EventArgs e)
         {
-            if (UndoStack.Count > 0)
+            if (Manager.UndoStack.Count > 0)
             {
-                RedoStack.Push(CopytoNewfloat(noisemapp));
-                noisemapp = UndoStack.Pop();
-                temp = CopytoNewfloat(noisemapp);
-                Draw_Bitmap(FloattoBitmap(noisemapp));
+                Manager.RedoStack.Push(CopytoNewfloat(Manager.noisemap));
+                Manager.noisemap = Manager.UndoStack.Pop();
+                temp = CopytoNewfloat(Manager.noisemap);
+                Draw_Bitmap(FloattoBitmap(Manager.noisemap));
             }
         }
 
         private void Redo(object sender, EventArgs e)
         {
-            if (RedoStack.Count > 0)
+            if (Manager.RedoStack.Count > 0)
             {
-                UndoStack.Push(CopytoNewfloat(noisemapp));
-                noisemapp = RedoStack.Pop();
-                Draw_Bitmap(FloattoBitmap(noisemapp));
+                Manager.UndoStack.Push(CopytoNewfloat(Manager.noisemap));
+                Manager.noisemap = Manager.RedoStack.Pop();
+                Draw_Bitmap(FloattoBitmap(Manager.noisemap));
             }
         }
 
@@ -146,7 +141,7 @@ namespace CSTerrain
             {
                 for (int j = 0; j < size; j++)
                 {
-                    bit.SetPixel(i, j, TerrainCmap.Interpolate_value(noisemapp[i, j]));
+                    bit.SetPixel(i, j, TerrainCmap.Interpolate_value(Manager.noisemap[i, j]));
                 }
             }
             return bit;
@@ -196,18 +191,11 @@ namespace CSTerrain
             return nud;
         }
 
-        public void TakeNoisemap(float[,] noisemap)
-        {
-            noisemapp = noisemap;
-            temp = noisemap;
-            Draw_Bitmap(BaseNoise.Gen_bitmap(noisemapp));
-        }
 
         private void ToMeshForm(object sender, EventArgs e)
         {
             MeshForm form2 = new MeshForm();
             form2.Show();
-            form2.TakeHeightmap(noisemapp);
             this.Hide();
 
         }
@@ -229,15 +217,15 @@ namespace CSTerrain
         private void Mousemove(object sender, MouseEventArgs e)
         {
 
-            float sf = noisemapp.GetLength(0) / 500f;
+            float sf = Manager.noisemap.GetLength(0) / 500f;
 
             int x = (int)(e.Location.X * sf);
             int y = (int)(e.Location.Y * sf);
-            if (x > noisemapp.GetLength(0) - 1 || x < 0 || noisemapp == null || y < 0 || y > noisemapp.GetLength(1) - 1)
+            if (x > Manager.noisemap.GetLength(0) - 1 || x < 0 || Manager.noisemap == null || y < 0 || y > Manager.noisemap.GetLength(1) - 1)
             {
                 return;
             }
-            heightlabel.Text = $"[{x}, {y}] = {((noisemapp[x, y].ToString().Length > 4) ? noisemapp[x, y].ToString().Substring(0, 5) : noisemapp[x, y].ToString())}";
+            heightlabel.Text = $"[{x}, {y}] = {((Manager.noisemap[x, y].ToString().Length > 4) ? Manager.noisemap[x, y].ToString().Substring(0, 5) : Manager.noisemap[x, y].ToString())}";
         }
 
         //handles the radius size through the scroll wheel
@@ -263,9 +251,9 @@ namespace CSTerrain
             float scale = 0.015f;
             //college = P:\\csharpterrain\\csharpterrain
             //home = C:\\Users\\iantr\\source\\repos\\CSTerrain\\CSTerrain
-            string path = "C:\\Users\\iantr\\source\\repos\\CSTerrain\\CSTerrain";
+            string path = "P:\\csharpterrain\\csharpterrain";
 
-            OBJExport exp = new OBJExport(noisemapp);
+            OBJExport exp = new OBJExport();
             await exp.Export(path, scale);
         }
 
@@ -275,7 +263,7 @@ namespace CSTerrain
             int val = (int)intensityud.Value;
             intensity = e.Button == MouseButtons.Left ? 0.01f * val : val * -0.005f;
 
-            float sf = noisemapp.GetLength(0) / 500f;
+            float sf = Manager.noisemap.GetLength(0) / 500f;
 
             int x = (int)(e.Location.X * sf);
             int y = (int)(e.Location.Y * sf);
@@ -289,10 +277,10 @@ namespace CSTerrain
         private void Update_bitmap(int x, int y, int radius, float intesity)
         {
             int xmin = Math.Max(0, x - radius);
-            int xmax = Math.Min(noisemapp.GetLength(0) - 1, x + radius);
+            int xmax = Math.Min(Manager.noisemap.GetLength(0) - 1, x + radius);
 
             int ymin = Math.Max(0, y - radius);
-            int ymax = Math.Min(noisemapp.GetLength(1) - 1, y + radius);
+            int ymax = Math.Min(Manager.noisemap.GetLength(1) - 1, y + radius);
 
             Edit_bitmap(xmin, xmax, ymin, ymax, radius, intesity, x, y);
             Draw_Bitmap(noise_bitmap);
@@ -301,7 +289,7 @@ namespace CSTerrain
         //edits the bitmap depending on parameters from updatebitmap
         private Bitmap Edit_bitmap(int xmin, int xmax, int ymin, int ymax, int radius, float base_intensity, int x, int y)
         {
-            noise_bitmap = new Bitmap(noisemapp.GetLength(0) - 1, noisemapp.GetLength(1) - 1);
+            noise_bitmap = new Bitmap(Manager.noisemap.GetLength(0) - 1, Manager.noisemap.GetLength(1) - 1);
             for (int i = xmin; i < xmax; i++)
             {
                 for (int j = ymin; j < ymax; j++)
@@ -310,9 +298,9 @@ namespace CSTerrain
                     if (distance < radius * radius)
                     {
                         float intensity = base_intensity * (1 - (distance / (radius * radius)));
-                        noisemapp[i, j] = Math.Max(Math.Min(1, intensity + noisemapp[i, j]), 0);
+                        Manager.noisemap[i, j] = Math.Max(Math.Min(1, intensity + Manager.noisemap[i, j]), 0);
                     }
-                    Color c = TerrainCmap.Interpolate_value(noisemapp[i, j]);
+                    Color c = TerrainCmap.Interpolate_value(Manager.noisemap[i, j]);
                     noise_bitmap.SetPixel(i, j, c);
                 }
             }
@@ -323,10 +311,10 @@ namespace CSTerrain
         private void Release_handler(object sender, MouseEventArgs e)
         {
 
-            UndoStack.Push(CopytoNewfloat(temp));
-            RedoStack.Clear();
+            Manager.UndoStack.Push(CopytoNewfloat(temp));
+            Manager.RedoStack.Clear();
             timer2.Stop();
-            temp = CopytoNewfloat(noisemapp);
+            temp = CopytoNewfloat(Manager.noisemap);
         }
 
         //redraw the nopisemap bitmap on picturebox 1
@@ -341,7 +329,7 @@ namespace CSTerrain
         //upodates the position based on the mouse position when mouse is held
         private void Drag_handler(object sender, EventArgs e)
         {
-            float sf = noisemapp.GetLength(0) / 500f;
+            float sf = Manager.noisemap.GetLength(0) / 500f;
 
             int x = (int)(PointToClient(MousePosition).X * sf);
             int y = (int)(PointToClient(MousePosition).Y * sf);
@@ -352,36 +340,38 @@ namespace CSTerrain
         //generates the noisemap and draws it at hte start of the program
         private void Timer1_Tick(object sender, EventArgs e)
         {
-            if (started != true)
-            {
-                Generate(0.006f, 6, 0.5f, 500, 0, 0f);
-                started = true;
-            }
+            Generate(0.006f, 6, 0.5f, 500, 0, 0f);
             picturebox1.MouseMove += new MouseEventHandler(Mousemove);
             timer1.Stop();
         }
 
         //Generates a new noise map and draws it on picturebox 1
-        private void Generate(float scale, int octaves, float persistance, int size, int mode, float mix)
+        private void Generate(float scale = 0.006f, int octaves = 6, float persistance = 0.5f, int size = 500, int mode = 0, float mix = 0.5f)
         {
-            PerlinNoise Pnoisegen = new PerlinNoise(size, octaves, persistance, scale);
-            SimplexNoise Snoisegen = new SimplexNoise(size, octaves, persistance, scale);
+            if (Manager.noisemap == null)
+            {
+                PerlinNoise Pnoisegen = new PerlinNoise(size, octaves, persistance, scale);
+                SimplexNoise Snoisegen = new SimplexNoise(size, octaves, persistance, scale);
+                float[,] tempmap, moisturemap;
+                if (mode == 0)
+                {
+                    Manager.noisemap = BaseNoise.Normalise(Pnoisegen.Gen_array());
+                    Manager.noisemap = BaseNoise.IslandShaper(Manager.noisemap, mix);
+                    tempmap = BaseNoise.Normalise(Pnoisegen.Gen_array());
+                    moisturemap = BaseNoise.Normalise(Pnoisegen.Gen_array());
+                }
+                else
+                {
+                    Manager.noisemap = SimplexNoise.Normalise(Snoisegen.Gen_array());
+                    Manager.noisemap = BaseNoise.IslandShaper(Manager.noisemap, mix);
+                }
+                Manager.UndoStack = new Stack<float[,]>();
+                Manager.RedoStack = new Stack<float[,]>();
+            }
+            Draw_Bitmap(BaseNoise.Gen_bitmap2(Manager.noisemap));
 
-            if (mode == 0)
-            {
-                noisemapp = BaseNoise.Normalise(Pnoisegen.Gen_array());
-                noisemapp = BaseNoise.IslandShaper(noisemapp, mix);
-                Draw_Bitmap(PerlinNoise.Gen_bitmap2(noisemapp));
-            }
-            else
-            {
-                noisemapp = SimplexNoise.Normalise(Snoisegen.Gen_array());
-                noisemapp = BaseNoise.IslandShaper(noisemapp, mix);
-                Draw_Bitmap(SimplexNoise.Gen_bitmap2(noisemapp));
-            }
-            temp = CopytoNewfloat(noisemapp);
-            UndoStack = new Stack<float[,]>();
-            RedoStack = new Stack<float[,]>();
+            temp = CopytoNewfloat(Manager.noisemap);
+
         }
     }
 }

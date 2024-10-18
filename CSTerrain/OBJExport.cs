@@ -12,15 +12,13 @@ namespace CSTerrain
     //class used to export the noisemap to an obj file
     public class OBJExport
     {
-        public float[,] terrain { get; set; }
         public int row { get; set; }
         public int col { get; set; }
         //constructor
-        public OBJExport(float[,] inTerrain)
+        public OBJExport()
         {
-            terrain = inTerrain;
-            row = inTerrain.GetLength(0);
-            col = inTerrain.GetLength(1);
+            row = Manager.noisemap.GetLength(0);
+            col = Manager.noisemap.GetLength(1);
         }
 
         //generates the vertices used in the obj file 
@@ -32,7 +30,7 @@ namespace CSTerrain
                 for (int j = 0; j < col; j++)
                 {
                     float x = i * scale;
-                    float y = terrain[i, j];
+                    float y = Manager.noisemap[i, j];
                     float z = j * scale;
                     vertices.Add((x, y, z));
                 }
@@ -45,7 +43,7 @@ namespace CSTerrain
         {
             List<(int, int, int)> faces = new List<(int, int, int)>();
 
-            for(int i = 0; i < row - 2; i++)
+            for (int i = 0; i < row - 2; i++)
             {
                 for (int j = 0; j < col - 2; j++)
                 {
@@ -74,7 +72,7 @@ namespace CSTerrain
             {
                 await f.WriteLineAsync($"v {v.Item1} {v.Item2 * multiplyer} {v.Item3}");
             }
-            
+
             foreach (var face in faces)
             {
                 await f.WriteLineAsync($"f {face.Item1} {face.Item2} {face.Item3}");

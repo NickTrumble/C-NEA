@@ -19,9 +19,45 @@ namespace CSTerrain
             Color.White
         };
 
+        //public static Color GetBiomeC()
+        //{
+        //    Color[] colours =
+        //    {
+        //        Color.FromArgb(0, 255, 0), Color.FromArgb(0, 200, 150),
+        //        Color.FromArgb(200, 200, 0)
+        //    };
+        //}
+
         //interpolates between base colours in the cmap depending on the noise value
         public static Color Interpolate_value(float noise_value)
         {
+
+            if (noise_value < 0.1) // waterd
+            {
+                return cmapC[0];
+            }
+            else if (noise_value < 0.3) // sansd
+            {
+                float t = (noise_value - 0.1f) / 0.2f;
+                return Colour_lerp(cmapC[0], cmapC[1], t);
+            }
+            else if (noise_value < 0.5) // grass
+            {
+                float t = (noise_value - 0.3f) / 0.2f;
+                return Colour_lerp(cmapC[1], cmapC[2], t);
+            }
+            else if (noise_value < 0.7) // rock
+            {
+                float t = (noise_value - 0.5f) / 0.2f;
+                return Colour_lerp(cmapC[2], cmapC[3], t);
+            }
+            else // snow
+            {
+                float t = (noise_value - 0.7f) / 0.3f;
+                return Colour_lerp(cmapC[3], cmapC[4], t);
+            }
+
+
 
             if (noise_value < 0.1) // waterd
             {

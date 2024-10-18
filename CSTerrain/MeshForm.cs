@@ -9,7 +9,6 @@ namespace CSTerrain
     {
         public bool started = true;
         Button MainForm;
-        float[,] heightmap;
         DrawMesh drawer;
         int scale = 200;
         int xoffset, yoffset;
@@ -64,6 +63,10 @@ namespace CSTerrain
             };
             Controls.Add(ypanslider);
             ypanslider.ValueChanged += new EventHandler(YPan);
+
+            drawer = new DrawMesh(Manager.noisemap, xoffset, yoffset, scale);
+            CreateBitmap();
+            Invalidate();
         }
 
         public void YPan(object sender, EventArgs e)
@@ -103,14 +106,6 @@ namespace CSTerrain
             return Output;
         }
 
-        public void TakeHeightmap(float[,] h)
-        {
-            heightmap = h;
-            drawer = new DrawMesh(heightmap, xoffset, yoffset, scale);
-            CreateBitmap();
-            Invalidate();
-        }
-
         public void CreateBitmap()
         {
             b = new Bitmap(Width, Height);
@@ -131,7 +126,6 @@ namespace CSTerrain
             Form1 Home = new Form1();
             Home.Show();
             this.Hide();
-            Home.TakeNoisemap(heightmap);
         }
     }
 }
