@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -141,7 +141,7 @@ namespace CSTerrain
             {
                 for (int j = 0; j < size; j++)
                 {
-                    bit.SetPixel(i, j, TerrainCmap.Interpolate_value(Manager.noisemap[i, j]));
+                    bit.SetPixel(i, j, TerrainCmap.Interpolate_value(i, j));
                 }
             }
             return bit;
@@ -300,7 +300,7 @@ namespace CSTerrain
                         float intensity = base_intensity * (1 - (distance / (radius * radius)));
                         Manager.noisemap[i, j] = Math.Max(Math.Min(1, intensity + Manager.noisemap[i, j]), 0);
                     }
-                    Color c = TerrainCmap.Interpolate_value(Manager.noisemap[i, j]);
+                    Color c = TerrainCmap.Interpolate_value(i, j);
                     noise_bitmap.SetPixel(i, j, c);
                 }
             }
@@ -352,13 +352,12 @@ namespace CSTerrain
             {
                 PerlinNoise Pnoisegen = new PerlinNoise(size, octaves, persistance, scale);
                 SimplexNoise Snoisegen = new SimplexNoise(size, octaves, persistance, scale);
-                float[,] tempmap, moisturemap;
                 if (mode == 0)
                 {
                     Manager.noisemap = BaseNoise.Normalise(Pnoisegen.Gen_array());
                     Manager.noisemap = BaseNoise.IslandShaper(Manager.noisemap, mix);
-                    tempmap = BaseNoise.Normalise(Pnoisegen.Gen_array());
-                    moisturemap = BaseNoise.Normalise(Pnoisegen.Gen_array());
+                    Manager.tempmap = BaseNoise.Normalise(Pnoisegen.Gen_array());
+                    Manager.moisturemap = BaseNoise.Normalise(Pnoisegen.Gen_array());
                 }
                 else
                 {
